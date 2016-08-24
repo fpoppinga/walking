@@ -1,10 +1,25 @@
-m0 = 1;
-m1 = 0.001;
-b = 0.1;
-k = 0.1;
-g = 9.81;
-z = 0.25;
-omegaSquared = g / z;
+%% FLIPM
 
-G = tf([-1/omegaSquared 0 1], [1 0 0]) * tf([b k], [m0*m1 (m0+m1)*b (m0+m1)*k]);
-step(G)
+% parameters
+k = 1;
+b = 1;
+m1 = 1;
+m2 = 1e-3;
+
+% model
+% let x = [c1 c1' c2 c2']^T
+
+A = [0      1       0       0
+     -k/m1  -b/m1   k/m1    b/m1
+     0      0       0       1
+     k/m2   b/m2    -k/m2   -b/m2];
+ 
+b = [0      0       0       1/m2]';
+ 
+C = [1      0       0       0
+     0      0       1       0];
+ 
+sys = ss(A, b, C, 0);
+
+%%
+

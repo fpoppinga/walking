@@ -19,26 +19,32 @@ C = [1 0];
 [Phi, Gamma, C, D] = ssdata(c2d(ss(A, B, C, 0), Ts, 'zoh'))
 
 %% simulation - the cycle.
-kMax = 200;
+kMax = 500;
 x = zeros(2, kMax);
 u = zeros(1, kMax);
 y = zeros(1, kMax);
 energy = zeros(1, kMax);
+safetyMargin = 0.92;
 
 
 x(:, 1) = [0 0.01]';
 
-stepLength = 0.2;
+maxStep = 0.15;
 for k = 1:kMax
    x(:, k + 1) = Phi * x(:, k) + B * u(k);
    y(k) = C * x(:,k);
    
-   if y(k) >= stepLength/2 
+   % The safetyMargin needs to be applied, because otherwise the robot will
+   % not be able to stop ever again, once the the calculated capture Step is
+   % bigger then the maxStep
+   if y(k) >= maxStep/2 * safetyMargin
       % capture point - this position will stop the robot in one step.
       xc = -x(2, k + 1) * sqrt(h / g);
       
-      if abs(xc - x(1, k + 1)) > stepLength
-        x(1, k + 1) = x(1, k + 1) - stepLength;
+      % the capture step can only be performed, if it is not restricted by
+      % the hardware limit.
+      if abs(xc - x(1, k + 1)) > maxStep
+        x(1, k + 1) = x(1, k + 1) - maxStep;
       else
         x(1, k + 1) = xc;  
       end
@@ -53,11 +59,11 @@ for k = 1:kMax
 end
 
 figure();
-stairs(1:kMax+1, x(1, :), '-b');
+stairs(1:kMax+1, x(1, :), '-b', 'DisplayName', 'position');
 hold on;
 
-stairs(1:kMax+1, x(2, :), '-r');
-plot(1:kMax, energy)
+stairs(1:kMax+1, x(2, :), '-r', 'DisplayName', 'velocity');
+plot(1:kMax, energy, 'DisplayName', 'energy')
 grid on;
-
+legend('show');
 

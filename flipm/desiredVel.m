@@ -6,5 +6,11 @@
 function stepX = desiredVel(dx0, dvel)
    global g;
    global h;
-   stepX = -sqrt(h/g * (dx0^2-dvel^2));
+   
+   if(sign(dvel) ~= sign(dx0))
+       stepX = -sqrt(h/g * (dx0^2+dvel^2)) * sign(dvel);
+   else
+     stepX = -sqrt(h/g * (dx0^2-dvel^2)) * sign(dvel);  
+   end
+   
 end

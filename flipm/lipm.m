@@ -24,25 +24,30 @@ C = [1 0];
 
 [Phi, Gamma, C, D] = ssdata(c2d(ss(A, B, C, 0), Ts, 'zoh'));
 
+Gamma = [1 0]'
+
 %% observer
 Qe = eye(2);
 Re = eye(1);
 L = dlqr(Phi', C', Qe, Re)';
 
 %% simulation - the cycle.
-kMax = 1000;
+kMax = 500;
 x = zeros(2, kMax);
 u = zeros(1, kMax);
 y = zeros(1, kMax);
 energy = zeros(1, kMax);
-safetyMargin = 0.3;
+safetyMargin = 0.8;
 
-x(:, 1) = [0 0.5]';
+x(:, 1) = [0 0.01]';
 
 % state estimation
 xe = zeros(2, kMax);
 xe(:, 1) = 0.9 * x(:, 1);
 ye = zeros(1, kMax);
+
+%target speed
+v_target = 0.2*sin((pi/kMax).*(1:kMax));
 
 for k = 1:kMax 
    x(:, k + 1) = Phi * x(:, k) + Gamma * u(k);
@@ -51,17 +56,16 @@ for k = 1:kMax
    ye(k) = C * xe(:, k);
    xe(:, k + 1) = Phi * xe(:, k) + L * (y(k) - ye(k)) + Gamma * u(k);
    
-   
-   if k == 200 
-      x(2, k + 1) = x(2, k + 1) + 0.8;
-   end
+%    if k == 200 
+%       x(2, k + 1) = x(2, k + 1) + 0.8;
+%    end
    
    % The safetyMargin needs to be applied, because otherwise the robot will
    % not be able to stop ever again, once the the calculated capture Step is
    % bigger then the maxStep
    if xe(1, k) >= maxStep/2 * safetyMargin
       % capture point - this position will stop the robot in one step.
-      xStep = desiredVel(xe(2, k+1), 0.1);
+      xStep = sign(v_target(k)) * desiredVel(xe(2, k+1), v_target(k));
       
       % the step can only be performed, if it is not restricted by
       % the hardware limit. 
@@ -79,12 +83,13 @@ end
 
 figure();
 stairs(1:kMax+1, x(1, :), '-b', 'DisplayName', 'position');
-hold on;
+hold all;
 stairs(1:kMax+1, xe(1, :), '-g', 'DisplayName', 'position estimate');
 
 stairs(1:kMax+1, x(2, :), '-r', 'DisplayName', 'velocity');
 stairs(1:kMax+1, xe(2, :), '-black', 'DisplayName', 'velocity estimate');
 plot(1:kMax, energy, 'DisplayName', 'energy')
+plot(1:kMax, v_target, 'DisplayName', 'target velocity');
 grid on;
 legend('show');
 
